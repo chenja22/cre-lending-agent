@@ -9,13 +9,14 @@ Built with the Anthropic Claude API and Claude Code.
 Most CRE loan underwriting is manual, slow, and siloed. An analyst pulls financials, a separate team runs market comps, a credit officer writes the memo — often over days or weeks.
 
 This system replicates that workflow with five specialized AI agents coordinated by an orchestrator:
+```
 Orchestrator
 ├── Intake Agent -> parses deal documents, extracts structured parameters
 ├── Underwriting Agent -> calculates DSCR, LTV, debt yield, stress tests
 ├── Market Agent -> submarket analysis, cap rates, vacancy, rent trends
 ├── Credit Agent -> sponsor strength, track record, documentation gaps
 └── Memo Agent -> assembles IC-ready credit memorandum as PDF
-
+```
 Each agent receives structured input, returns structured JSON, and passes context forward. The final output is a full credit memo with a clear APPROVE / CONDITIONAL / DECLINE recommendation.
 
 ---
@@ -56,11 +57,11 @@ The orchestrator maintains a central `deal_state` dict that accumulates outputs 
 
 ### Data Flow
 deal docs (PDF/TXT)
-→ IntakeAgent       → deal_params (JSON)
+→ IntakeAgent → deal_params (JSON)
 → UnderwritingAgent → underwriting metrics + qualitative assessment (JSON)
-→ MarketAgent       → submarket analysis (JSON)
-→ CreditAgent       → sponsor credit assessment (JSON)
-→ MemoAgent         → full credit memo (text + PDF)
+→ MarketAgent → submarket analysis (JSON)
+→ CreditAgent → sponsor credit assessment (JSON)
+→ MemoAgent → full credit memo (text + PDF)
 
 ### Financial Logic
 Core underwriting calculations are handled in `tools/calculator.py`, separate from the agent layer:
