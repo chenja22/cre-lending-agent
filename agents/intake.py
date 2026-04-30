@@ -3,8 +3,14 @@ import os
 import pdfplumber
 from agents.base import BaseAgent
 
-SYSTEM_PROMPT = """You are a commercial real estate loan intake specialist. 
-Your job is to extract key deal parameters from loan documents and return them as structured JSON.
+SYSTEM_PROMPT = """You are a commercial real estate loan intake specialist.
+Extract deal parameters from loan applications OR offering memorandums (OMs).
+
+For offering memorandums, derive loan parameters using standard assumptions:
+- Loan amount: 65% of offering price (standard LTV for small multifamily)
+- Appraised value: offering price
+- Borrower: use property LLC name or "Prospective Buyer LLC" if unknown
+- NOI: use current NOI if available, not pro forma
 
 You must always return valid JSON with exactly this structure, no extra text:
 {
@@ -19,10 +25,16 @@ You must always return valid JSON with exactly this structure, no extra text:
     "loan_term_years": 0,
     "interest_rate": 0.0,
     "amortization_years": 0,
-    "notes": "any other relevant details"
+    "notes": "any other relevant details including value-add upside, rent roll details, capex history"
 }
 
-If a field is not found in the documents, use 0 for numbers and "unknown" for strings.
+Standard assumptions when not specified:
+- loan_term_years: 5
+- interest_rate: 6.75
+- amortization_years: 30
+- occupancy_rate: derive from rent roll vacancy if available
+
+If a field is not found, use 0 for numbers and "unknown" for strings.
 Always return only the JSON object, no markdown, no explanation."""
 
 class IntakeAgent(BaseAgent):
