@@ -27,7 +27,9 @@ Return JSON only, no markdown:
 }
 
 Include sources as a list of URLs or publication names you used.
-Return only JSON, no markdown."""
+CRITICAL: Your final response must start with { and end with }.
+Do not include any text before the opening brace or after the closing brace.
+Do not explain what you are doing. Output only the JSON object."""
 
 class MarketAgent(BaseAgent):
     def __init__(self):
@@ -47,13 +49,40 @@ for {deal_params.get('address', 'this location')} including cap rates, vacancy r
 rent growth, and any recent market news.
 """
         result = self._run_with_search(prompt)
-        result = result.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        result = self._extract_json(result)
 
         try:
             return json.loads(result)
         except json.JSONDecodeError:
-            print(f"[MarketAgent] Warning: Could not parse JSON")
-            return {"market_commentary": result}
+            print(f"[MarketAgent] Warning: Could not parse JSON, attempting recovery...")
+            return self._recover_json(result)
+
+    def _extract_json(self, text: str) -> str:
+        """Robustly extract JSON from text that may have preamble or markdown."""
+        text = text.strip()
+        text = text.removeprefix("```json").removeprefix("```")
+        text = text.removesuffix("```").strip()
+        start = text.find('{')
+        end = text.rfind('}')
+        if start != -1 and end != -1:
+            text = text[start:end+1]
+        return text
+
+    def _recover_json(self, bad_response: str) -> dict:
+        """Ask Claude to extract JSON from a malformed response."""
+        recovery_prompt = f"""
+The following text should be a JSON object but may have extra content.
+Extract ONLY the JSON object and return it with no other text:
+
+{bad_response}
+"""
+        result = super().run(recovery_prompt)
+        result = self._extract_json(result)
+        try:
+            return json.loads(result)
+        except json.JSONDecodeError:
+            print(f"[MarketAgent] Recovery failed, returning empty market data")
+            return {"market_commentary": bad_response[:500], "sources": []}
 
     def _run_with_search(self, user_message: str) -> str:
         print(f"\n[{self.name}] Running with web search...")
@@ -73,14 +102,11 @@ rent growth, and any recent market news.
             messages=[{"role": "user", "content": user_message}]
         )
 
-        # Handle tool use loop
         messages = [{"role": "user", "content": user_message}]
 
         while response.stop_reason == "tool_use":
-            # Add assistant response to messages
             messages.append({"role": "assistant", "content": response.content})
 
-            # Process tool results
             tool_results = []
             for block in response.content:
                 if block.type == "tool_use":
@@ -100,7 +126,6 @@ rent growth, and any recent market news.
                 messages=messages
             )
 
-        # Extract final text response
         for block in response.content:
             if hasattr(block, 'text'):
                 print(f"\n[{self.name}] Done.")

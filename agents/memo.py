@@ -41,7 +41,7 @@ class MemoAgent(BaseAgent):
             name="MemoAgent",
             system_prompt=SYSTEM_PROMPT,
             model="claude-haiku-4-5-20251001",
-            max_tokens=4096
+            max_tokens=8192
     )
 
     def run(self, deal_state: dict) -> str:
