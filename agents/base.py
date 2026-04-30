@@ -23,3 +23,16 @@ class BaseAgent:
         result = response.content[0].text
         print(f"\n[{self.name}] Done.")
         return result
+
+    def run_structured(self, user_message: str, output_schema) -> object:
+        """Run with structured outputs — guaranteed schema compliance."""
+        print(f"\n[{self.name}] Running (structured)...")
+        response = self.client.beta.messages.parse(
+            model="claude-sonnet-4-5",
+            max_tokens=self.max_tokens,
+            system=self.system_prompt,
+            messages=[{"role": "user", "content": user_message}],
+            output_format=output_schema,
+        )
+        print(f"\n[{self.name}] Done.")
+        return response.parsed_output

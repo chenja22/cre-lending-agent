@@ -1,5 +1,5 @@
-import json
 from agents.base import BaseAgent
+from agents.schema import CreditOutput
 
 SYSTEM_PROMPT = """You are a senior credit officer evaluating sponsor strength for a CRE loan.
 
@@ -36,11 +36,5 @@ Loan Amount: ${deal_params.get('loan_amount', 0):,}
 Property Type: {deal_params.get('property_type', 'unknown')}
 Notes: {deal_params.get('notes', 'None provided')}
 """
-        result = super().run(prompt)
-        result = result.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-
-        try:
-            return json.loads(result)
-        except json.JSONDecodeError:
-            print(f"[CreditAgent] Warning: Could not parse JSON")
-            return {"credit_commentary": result}
+        result = self.run_structured(prompt, CreditOutput)
+        return result.model_dump()

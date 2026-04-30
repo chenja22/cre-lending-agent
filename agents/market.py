@@ -1,5 +1,6 @@
 import json
 from agents.base import BaseAgent
+from agents.schema import MarketOutput
 
 SYSTEM_PROMPT = """You are a commercial real estate market research analyst.
 Given a property's location and type, search for current market data and provide a concise analysis.
@@ -48,41 +49,14 @@ Search for current {deal_params.get('property_type', 'multifamily')} market data
 for {deal_params.get('address', 'this location')} including cap rates, vacancy rates, 
 rent growth, and any recent market news.
 """
-        result = self._run_with_search(prompt)
-        result = self._extract_json(result)
+        raw_result = self._run_with_search(prompt)
 
-        try:
-            return json.loads(result)
-        except json.JSONDecodeError:
-            print(f"[MarketAgent] Warning: Could not parse JSON, attempting recovery...")
-            return self._recover_json(result)
+        parse_prompt = f"""Convert this market research into structured JSON format:
 
-    def _extract_json(self, text: str) -> str:
-        """Robustly extract JSON from text that may have preamble or markdown."""
-        text = text.strip()
-        text = text.removeprefix("```json").removeprefix("```")
-        text = text.removesuffix("```").strip()
-        start = text.find('{')
-        end = text.rfind('}')
-        if start != -1 and end != -1:
-            text = text[start:end+1]
-        return text
-
-    def _recover_json(self, bad_response: str) -> dict:
-        """Ask Claude to extract JSON from a malformed response."""
-        recovery_prompt = f"""
-The following text should be a JSON object but may have extra content.
-Extract ONLY the JSON object and return it with no other text:
-
-{bad_response}
+{raw_result}
 """
-        result = super().run(recovery_prompt)
-        result = self._extract_json(result)
-        try:
-            return json.loads(result)
-        except json.JSONDecodeError:
-            print(f"[MarketAgent] Recovery failed, returning empty market data")
-            return {"market_commentary": bad_response[:500], "sources": []}
+        result = self.run_structured(parse_prompt, MarketOutput)
+        return result.model_dump()
 
     def _run_with_search(self, user_message: str) -> str:
         print(f"\n[{self.name}] Running with web search...")

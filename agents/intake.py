@@ -1,7 +1,9 @@
 import json
 import os
+from unittest import result
 import pdfplumber
 from agents.base import BaseAgent
+from agents.schema import DealParams
 
 SYSTEM_PROMPT = """You are a commercial real estate loan intake specialist.
 Extract deal parameters from loan applications OR offering memorandums (OMs).
@@ -43,13 +45,11 @@ class IntakeAgent(BaseAgent):
 
     def run(self, deal_path: str) -> dict:
         raw_text = self._parse_docs(deal_path)
-        result = super().run(f"Extract deal parameters from these documents:\n\n{raw_text}")
-        result = result.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-        try:
-            return json.loads(result)
-        except json.JSONDecodeError:
-            print(f"[IntakeAgent] Warning: Could not parse JSON, raw response: {result}")
-            return {}
+        result = self.run_structured(
+        f"Extract deal parameters from these documents:\n\n{raw_text}",
+        DealParams
+    )
+        return result.model_dump()
 
     def _parse_docs(self, deal_path: str) -> str:
         all_text = []

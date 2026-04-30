@@ -1,5 +1,6 @@
 import json
 from agents.base import BaseAgent
+from agents.schema import UnderwritingOutput
 from tools.calculator import (
     calculate_annual_debt_service,
     calculate_dscr,
@@ -75,27 +76,12 @@ CALCULATED METRICS:
 
 Provide your full underwriting assessment.
 """
-        result = super().run(prompt)
-        result = result.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-
-        try:
-            parsed = json.loads(result)
-            # Ensure calculated metrics are in output
-            parsed["dscr"] = dscr
-            parsed["ltv"] = ltv
-            parsed["debt_yield"] = debt_yield
-            parsed["annual_debt_service"] = ads
-            parsed["stress_dscr"] = stress_dscr
-            parsed["flag"] = flag
-            return parsed
-        except json.JSONDecodeError:
-            print(f"[UnderwritingAgent] Warning: Could not parse JSON")
-            return {
-                "dscr": dscr,
-                "ltv": ltv,
-                "debt_yield": debt_yield,
-                "annual_debt_service": ads,
-                "stress_dscr": stress_dscr,
-                "flag": flag,
-                "recommendation": result
-            }
+        parsed = self.run_structured(prompt, UnderwritingOutput)
+        parsed_dict = parsed.model_dump()
+        parsed_dict["dscr"] = dscr
+        parsed_dict["ltv"] = ltv
+        parsed_dict["debt_yield"] = debt_yield
+        parsed_dict["annual_debt_service"] = ads
+        parsed_dict["stress_dscr"] = stress_dscr
+        parsed_dict["flag"] = flag
+        return parsed_dict
