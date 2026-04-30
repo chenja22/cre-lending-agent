@@ -28,7 +28,7 @@ python main.py --deal data/sample_deal
 ```
 
 **Sample deal:** 50-unit multifamily, Chicago (Lakeview), $8M loan ask, 6.75% fixed, 30-year amortization.
-
+```
 **Output (truncated):**
 [IntakeAgent] Running...
 [IntakeAgent] Done.
@@ -42,6 +42,7 @@ python main.py --deal data/sample_deal
 [MemoAgent] Done. PDF saved to outputs/credit_memo_2847_N_Halsted.pdf
 RECOMMENDATION: DECLINE
 DSCR: 0.96x | LTV: 71.4% | Debt Yield: 7.5% | Stress DSCR: 0.81x
+```
 
 The full credit memo PDF is saved to `outputs/`.
 
@@ -57,11 +58,13 @@ The orchestrator maintains a central `deal_state` dict that accumulates outputs 
 
 ### Data Flow
 deal docs (PDF/TXT)
+```
 → IntakeAgent → deal_params (JSON)
 → UnderwritingAgent → underwriting metrics + qualitative assessment (JSON)
 → MarketAgent → submarket analysis (JSON)
 → CreditAgent → sponsor credit assessment (JSON)
 → MemoAgent → full credit memo (text + PDF)
+```
 
 ### Financial Logic
 Core underwriting calculations are handled in `tools/calculator.py`, separate from the agent layer:
@@ -100,6 +103,7 @@ python main.py --deal data/sample_deal
 ---
 
 ## Project Structure
+```
 cre-lending-agent/
 ├── main.py # entry point
 ├── orchestrator.py # agent coordination + state management
@@ -116,7 +120,7 @@ cre-lending-agent/
 │   └── sample_deal/ # sample deal documents (TXT/PDF)
 ├── outputs/ # generated credit memos land here
 └── tests/ # agent unit tests
-
+```
 ---
 
 ## Tech Stack
