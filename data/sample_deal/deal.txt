@@ -1,0 +1,22 @@
+LOAN APPLICATION SUMMARY
+
+Property: Lakeview Commons Apartments
+Address: 2847 N Halsted St, Chicago, IL 60657
+Property Type: Multifamily
+Borrower: Lakeview Commons LLC
+
+Loan Request: $8,000,000
+Appraised Value: $11,200,000
+Number of Units: 50
+Current Occupancy: 94%
+
+Annual Gross Revenue: $950,000
+Operating Expenses: $350,000
+Net Operating Income (NOI): $600,000
+
+Loan Term: 5 years
+Amortization: 30 years
+Interest Rate: 6.75%
+
+Sponsor has 12 years experience in Chicago multifamily.
+No prior defaults or foreclosures on record.
