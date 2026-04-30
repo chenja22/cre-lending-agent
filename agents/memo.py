@@ -27,6 +27,9 @@ SPONSOR ASSESSMENT
 STRESS TESTING
 [Stressed DSCR and rate sensitivity discussion]
 
+LOAN EXECUTION
+[Recommended lending program (Agency/CMBS/Balance Sheet/Bridge), rationale, and any alternative execution paths]
+
 CONDITIONS & MITIGANTS
 [Numbered list of conditions for approval or reasons for decline]
 
@@ -59,6 +62,9 @@ MARKET ANALYSIS:
 
 CREDIT ASSESSMENT:
 {json.dumps(deal_state.get('credit', {}), indent=2)}
+
+LOAN EXECUTION RECOMMENDATION:
+{json.dumps(deal_state.get('program_match', {}), indent=2)}
 """
         memo_text = super().run(prompt)
         self._save_pdf(memo_text, deal_state.get('deal_params', {}))

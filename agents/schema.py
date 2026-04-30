@@ -51,3 +51,14 @@ class CreditOutput(BaseModel):
     mitigants: List[str]
     credit_recommendation: str
     credit_commentary: str
+
+class ProgramMatchOutput(BaseModel):
+    recommended_program: str  # "Fannie Mae DUS" | "Freddie Mac Optigo" | "CMBS" | "Balance Sheet" | "Bridge"
+    program_rationale: str
+    alternative_programs: List[str]
+    agency_eligible: bool
+    cmbs_eligible: bool
+    bridge_required: bool
+    key_requirements: List[str]
+    execution_notes: str
+    program_commentary: str

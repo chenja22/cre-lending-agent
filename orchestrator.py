@@ -3,6 +3,7 @@ from agents.intake import IntakeAgent
 from agents.underwriting import UnderwritingAgent
 from agents.market import MarketAgent
 from agents.credit import CreditAgent
+from agents.program_matcher import ProgramMatcherAgent
 from agents.memo import MemoAgent
 
 class Orchestrator:
@@ -11,12 +12,12 @@ class Orchestrator:
         self.underwriting = UnderwritingAgent()
         self.market = MarketAgent()
         self.credit = CreditAgent()
+        self.program_matcher = ProgramMatcherAgent()
         self.memo = MemoAgent()
 
     def run(self, deal_path: str) -> dict:
         print("\n=== CRE LENDING AGENT STARTING ===")
 
-        # Initialize deal state
         deal_state = {}
 
         # Stage 1: Intake
@@ -27,7 +28,7 @@ class Orchestrator:
         deal_state["underwriting"] = self.underwriting.run(deal_state["deal_params"])
         print(f"Underwriting complete: {json.dumps(deal_state['underwriting'], indent=2)}")
 
-        # Stage 3: Market (runs in parallel conceptually, sequential here)
+        # Stage 3: Market
         deal_state["market"] = self.market.run(deal_state["deal_params"])
         print(f"Market analysis complete: {json.dumps(deal_state['market'], indent=2)}")
 
@@ -35,7 +36,11 @@ class Orchestrator:
         deal_state["credit"] = self.credit.run(deal_state["deal_params"])
         print(f"Credit analysis complete: {json.dumps(deal_state['credit'], indent=2)}")
 
-        # Stage 5: Memo assembly
+        # Stage 5: Program matching
+        deal_state["program_match"] = self.program_matcher.run(deal_state)
+        print(f"Program match complete: {json.dumps(deal_state['program_match'], indent=2)}")
+
+        # Stage 6: Memo assembly
         deal_state["memo"] = self.memo.run(deal_state)
         print("\n=== CREDIT MEMO GENERATED ===")
 
