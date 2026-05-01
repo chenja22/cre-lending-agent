@@ -1,6 +1,7 @@
 import json
 from agents.base import BaseAgent
 from agents.schema import MarketOutput
+from ui import console
 
 SYSTEM_PROMPT = """You are a commercial real estate market research analyst.
 Given a property's location and type, search for current market data and provide a concise analysis.
@@ -59,50 +60,40 @@ rent growth, and any recent market news.
         return result.model_dump()
 
     def _run_with_search(self, user_message: str) -> str:
-        print(f"\n[{self.name}] Running with web search...")
-
-        tools = [
-            {
-                "type": "web_search_20250305",
-                "name": "web_search"
-            }
-        ]
-
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            system=self.system_prompt,
-            tools=tools,
-            messages=[{"role": "user", "content": user_message}]
-        )
-
+        tools = [{"type": "web_search_20250305", "name": "web_search"}]
         messages = [{"role": "user", "content": user_message}]
 
-        while response.stop_reason == "tool_use":
-            messages.append({"role": "assistant", "content": response.content})
-
-            tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": json.dumps(block.input)
-                    })
-
-            messages.append({"role": "user", "content": tool_results})
-
+        with console.status(f"[cyan]{self.name}[/cyan]  searching the web…", spinner="dots"):
             response = self.client.messages.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
                 system=self.system_prompt,
                 tools=tools,
-                messages=messages
+                messages=messages,
             )
 
+            while response.stop_reason == "tool_use":
+                messages.append({"role": "assistant", "content": response.content})
+                tool_results = [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": json.dumps(block.input),
+                    }
+                    for block in response.content
+                    if block.type == "tool_use"
+                ]
+                messages.append({"role": "user", "content": tool_results})
+                response = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=self.max_tokens,
+                    system=self.system_prompt,
+                    tools=tools,
+                    messages=messages,
+                )
+
         for block in response.content:
-            if hasattr(block, 'text'):
-                print(f"\n[{self.name}] Done.")
+            if hasattr(block, "text"):
                 return block.text
 
         return ""

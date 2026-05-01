@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRE Lending Stack</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.0.0/marked.min.js"></script>
+  <style>
+    :root {
+      --navy:       #0f2137;
+      --blue:       #1565c0;
+      --blue-lt:    #e3f2fd;
+      --green:      #2e7d32;
+      --green-lt:   #e8f5e9;
+      --amber:      #e65100;
+      --amber-lt:   #fff3e0;
+      --red:        #c62828;
+      --red-lt:     #ffebee;
+      --gray:       #6b7280;
+      --border:     #e5e7eb;
+      --bg:         #f1f5f9;
+      --card:       #ffffff;
+      --text:       #111827;
+      --text-lt:    #6b7280;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ─────────────────────────────────────── */
+    header {
+      background: var(--navy); color: white;
+      padding: 20px 32px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 24px;
+    }
+    .hdr-eyebrow { font-size: .72rem; font-weight: 600; letter-spacing: .08em;
+                   text-transform: uppercase; opacity: .55; margin-bottom: 4px; }
+    #hdr-address { font-size: 1.55rem; font-weight: 700; }
+    #hdr-borrower { margin-top: 3px; opacity: .65; font-size: .9rem; }
+    .hdr-right { text-align: right; flex-shrink: 0; }
+    .flag-badge { display: inline-block; padding: 6px 20px; border-radius: 20px;
+                  font-weight: 700; font-size: 1rem; letter-spacing: .06em; }
+    .flag-PASS  { background: var(--green); }
+    .flag-WATCH { background: #ef6c00; }
+    .flag-FAIL  { background: var(--red); }
+    #hdr-program { margin-top: 7px; opacity: .72; font-size: .88rem; }
+
+    /* ── Nav ─────────────────────────────────────────── */
+    nav { background: white; border-bottom: 1px solid var(--border);
+          padding: 0 28px; display: flex; overflow-x: auto; }
+    nav button { background: none; border: none; cursor: pointer;
+                 padding: 13px 18px; font-size: .88rem; font-weight: 500;
+                 color: var(--text-lt); border-bottom: 3px solid transparent;
+                 white-space: nowrap; transition: color .12s; }
+    nav button:hover  { color: var(--blue); }
+    nav button.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* ── Layout ──────────────────────────────────────── */
+    main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    section { display: none; }
+    section.active { display: block; }
+
+    /* ── Cards ───────────────────────────────────────── */
+    .card { background: var(--card); border: 1px solid var(--border);
+            border-radius: 10px; padding: 20px; }
+    .card-title { font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+                  text-transform: uppercase; color: var(--text-lt); margin-bottom: 14px; }
+
+    /* ── Grids ───────────────────────────────────────── */
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+    .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 800px) {
+      .g2, .g3, .g4 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 500px) {
+      .g2, .g3, .g4 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Metric cards ────────────────────────────────── */
+    .mc { background: var(--card); border: 1px solid var(--border);
+          border-radius: 10px; padding: 18px 20px; }
+    .mc-label { font-size: .72rem; font-weight: 600; text-transform: uppercase;
+                letter-spacing: .06em; color: var(--text-lt); margin-bottom: 8px; }
+    .mc-value { font-size: 1.9rem; font-weight: 700; line-height: 1; }
+    .mc-sub   { font-size: .75rem; color: var(--text-lt); margin-top: 5px; }
+    .c-green { color: var(--green); }
+    .c-amber { color: var(--amber); }
+    .c-red   { color: var(--red);   }
+    .c-blue  { color: var(--blue);  }
+
+    /* ── Threshold bars ──────────────────────────────── */
+    .tbar { margin-bottom: 18px; }
+    .tbar:last-child { margin-bottom: 0; }
+    .tbar-hdr { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .tbar-name { font-size: .85rem; font-weight: 500; }
+    .tbar-val  { font-size: .9rem; font-weight: 700; }
+    .track { height: 9px; background: #e5e7eb; border-radius: 5px;
+             position: relative; overflow: visible; }
+    .fill { height: 100%; border-radius: 5px; transition: width .7s ease; }
+    .fill-green { background: var(--green); }
+    .fill-amber { background: #ef6c00; }
+    .fill-red   { background: var(--red); }
+    .tick { position: absolute; top: -3px; width: 2px; height: 15px;
+            background: #374151; border-radius: 1px; }
+    .tbar-axis { display: flex; justify-content: space-between; margin-top: 3px; }
+    .tbar-axis span { font-size: .68rem; color: var(--text-lt); }
+
+    /* ── Tags / pills ────────────────────────────────── */
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { padding: 4px 12px; border-radius: 16px; font-size: .8rem; font-weight: 500; display: inline-block; }
+    .tag-green { background: var(--green-lt); color: var(--green); }
+    .tag-amber { background: var(--amber-lt); color: var(--amber); }
+    .tag-red   { background: var(--red-lt);   color: var(--red);   }
+    .tag-blue  { background: var(--blue-lt);  color: var(--blue);  }
+    .tag-gray  { background: #f3f4f6;         color: var(--gray);  }
+
+    /* ── Lists ───────────────────────────────────────── */
+    ul.arrow-list, ul.dot-list { list-style: none; }
+    ul.arrow-list li, ul.dot-list li {
+      padding: 6px 0; border-bottom: 1px solid var(--border);
+      font-size: .87rem; display: flex; gap: 8px; line-height: 1.45;
+    }
+    ul.arrow-list li:last-child, ul.dot-list li:last-child { border-bottom: none; }
+    ul.arrow-list li::before { content: "→"; color: var(--blue); flex-shrink: 0; }
+    ul.dot-list li::before   { content: "•"; color: var(--text-lt); flex-shrink: 0; }
+
+    /* ── Detail rows ─────────────────────────────────── */
+    .drow { display: flex; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: .87rem; }
+    .drow:last-child { border-bottom: none; }
+    .drow-k { width: 170px; flex-shrink: 0; color: var(--text-lt); font-weight: 500; }
+    .drow-v { font-weight: 600; }
+
+    /* ── Assessment prose ────────────────────────────── */
+    .prose { font-size: .87rem; line-height: 1.65; color: #374151; }
+    .prose-block { margin-bottom: 16px; }
+    .prose-block:last-child { margin-bottom: 0; }
+    .prose-label { font-size: .7rem; font-weight: 700; text-transform: uppercase;
+                   letter-spacing: .06em; color: var(--text-lt); margin-bottom: 4px; }
+
+    /* ── Memo ────────────────────────────────────────── */
+    #memo-body { font-size: .9rem; line-height: 1.8; color: #1f2937; max-width: 760px; }
+    #memo-body h1,#memo-body h2,#memo-body h3 { color: var(--navy); margin: 1.3em 0 .4em; }
+    #memo-body h1 { font-size: 1.15rem; }
+    #memo-body h2 { font-size: 1rem; }
+    #memo-body strong { font-weight: 600; }
+    #memo-body ul,#memo-body ol { padding-left: 1.4em; }
+    #memo-body li { margin-bottom: 4px; }
+    #memo-body hr { border: none; border-top: 1px solid var(--border); margin: 1.5em 0; }
+    #memo-body p { margin-bottom: .8em; }
+
+    /* ── Batch table ─────────────────────────────────── */
+    .bt { width: 100%; border-collapse: collapse; font-size: .87rem; }
+    .bt th { text-align: left; padding: 10px 14px; background: var(--navy); color: white;
+             font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    .bt td { padding: 11px 14px; border-bottom: 1px solid var(--border); }
+    .bt tr:last-child td { border-bottom: none; }
+    .bt tr:hover td { background: #f8fafc; }
+
+    /* ── Chart wrappers ──────────────────────────────── */
+    .ch260 { position: relative; height: 260px; }
+    .ch280 { position: relative; height: 280px; }
+    .ch300 { position: relative; height: 300px; }
+
+    /* ── Error state ─────────────────────────────────── */
+    .err { text-align: center; padding: 64px 20px; color: var(--text-lt); }
+    .err code { background: #f3f4f6; padding: 2px 8px; border-radius: 4px;
+                font-family: monospace; font-size: .88rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="hdr-eyebrow">CRE Lending Stack</div>
+    <div id="hdr-address">Loading…</div>
+    <div id="hdr-borrower"></div>
+  </div>
+  <div class="hdr-right">
+    <div id="hdr-flag" class="flag-badge">–</div>
+    <div id="hdr-program"></div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="tab('overview',this)">Overview</button>
+  <button onclick="tab('underwriting',this)">Underwriting</button>
+  <button onclick="tab('market',this)">Market</button>
+  <button onclick="tab('credit',this)">Credit &amp; Program</button>
+  <button onclick="tab('memo',this)">Credit Memo</button>
+  <button id="btn-batch" style="display:none" onclick="tab('batch',this)">Batch (3)</button>
+</nav>
+
+<main>
+
+<!-- OVERVIEW ─────────────────────────────────────── -->
+<section id="overview" class="active">
+  <div id="metric-row" class="g4" style="margin-bottom:20px"></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Deal Profile</div>
+      <div class="ch260"><canvas id="radarChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Deal Parameters</div>
+      <div id="deal-params"></div>
+    </div>
+  </div>
+</section>
+
+<!-- UNDERWRITING ─────────────────────────────────── -->
+<section id="underwriting">
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Metrics vs Thresholds</div>
+      <div id="uw-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Benchmark Chart</div>
+      <div class="ch260"><canvas id="uwChart"></canvas></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Assessment Notes</div>
+      <div id="uw-notes"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Conditions for Approval</div>
+      <ul class="arrow-list" id="uw-conds"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- MARKET ───────────────────────────────────────── -->
+<section id="market">
+  <div id="market-stats" class="g3"></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Market Snapshot</div>
+      <div class="ch260"><canvas id="marketChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Commentary</div>
+      <p class="prose" id="mkt-commentary"></p>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Demand Drivers</div>
+      <ul class="dot-list" id="mkt-drivers"></ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Risk Factors</div>
+      <ul class="dot-list" id="mkt-risks"></ul>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Sources</div>
+    <div class="tags" id="mkt-sources"></div>
+  </div>
+</section>
+
+<!-- CREDIT & PROGRAM ─────────────────────────────── -->
+<section id="credit">
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Sponsor Assessment</div>
+      <div id="credit-body"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Loan Execution Recommendation</div>
+      <div id="program-body"></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Key Risks</div>
+      <ul class="dot-list" id="cr-risks"></ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Mitigants</div>
+      <ul class="dot-list" id="cr-mitigants"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- MEMO ─────────────────────────────────────────── -->
+<section id="memo">
+  <div class="card">
+    <div id="memo-body"></div>
+  </div>
+</section>
+
+<!-- BATCH ────────────────────────────────────────── -->
+<section id="batch">
+  <div class="card" style="margin-bottom:20px; overflow-x:auto">
+    <div class="card-title">Portfolio Comparison</div>
+    <table class="bt">
+      <thead><tr>
+        <th>Deal</th><th>DSCR</th><th>LTV</th><th>Debt Yield</th>
+        <th>Flag</th><th>Program</th><th>Credit Rec</th>
+      </tr></thead>
+      <tbody id="batch-rows"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-title">Normalized Score Comparison (0 – 10)</div>
+    <div class="ch300"><canvas id="batchChart"></canvas></div>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* ─── helpers ─────────────────────────────────────────── */
+const $  = id => document.getElementById(id);
+const x2  = n  => (+n || 0).toFixed(2) + 'x';
+const pct = n  => ((+n || 0) * 100).toFixed(1) + '%';
+const usd = n  => '$' + Math.round(+n || 0).toLocaleString();
+const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+const norm = (v, lo, hi) => clamp((v - lo) / (hi - lo), 0, 1) * 10;
+
+const FLAG_TAG = { PASS: 'tag-green', WATCH: 'tag-amber', FAIL: 'tag-red' };
+const CR_TAG   = { approve: 'tag-green', conditional: 'tag-amber', decline: 'tag-red' };
+
+let charts = {};
+
+function tab(id, btn) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  $(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function mkChart(id, config) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart($(id).getContext('2d'), config);
+}
+
+const CHART_DEFAULTS = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { font: { size: 11 } } } },
+};
+
+/* ─── header ──────────────────────────────────────────── */
+function renderHeader(d) {
+  const p  = d.deal_params   || {};
+  const uw = d.underwriting  || {};
+  const pm = d.program_match || {};
+  const flag = uw.flag || '–';
+  $('hdr-address').textContent = p.address  || 'Unknown Address';
+  $('hdr-borrower').textContent = p.borrower || '';
+  $('hdr-flag').textContent  = flag;
+  $('hdr-flag').className    = `flag-badge flag-${flag}`;
+  $('hdr-program').textContent = pm.recommended_program || '';
+  document.title = `CRE | ${p.address || 'Deal'}`;
+}
+
+/* ─── overview ────────────────────────────────────────── */
+function renderOverview(d) {
+  const p  = d.deal_params  || {};
+  const uw = d.underwriting || {};
+
+  const colorDSCR = uw.dscr >= 1.25 ? 'c-green' : uw.dscr >= 1.10 ? 'c-amber' : 'c-red';
+  const colorLTV  = uw.ltv  <= 0.65 ? 'c-green' : uw.ltv  <= 0.75 ? 'c-amber' : 'c-red';
+  const colorDY   = uw.debt_yield >= 0.10 ? 'c-green' : uw.debt_yield >= 0.075 ? 'c-amber' : 'c-red';
+  const colorStr  = uw.stress_dscr >= 1.25 ? 'c-green' : uw.stress_dscr >= 1.10 ? 'c-amber' : 'c-red';
+  const colorOcc  = p.occupancy_rate >= 0.90 ? 'c-green' : 'c-amber';
+
+  $('metric-row').innerHTML = [
+    { l:'DSCR',             v: x2(uw.dscr),          c: colorDSCR, s:'threshold 1.25x' },
+    { l:'LTV',              v: pct(uw.ltv),           c: colorLTV,  s:'max 75%' },
+    { l:'Debt Yield',       v: pct(uw.debt_yield),    c: colorDY,   s:'min 7.5%' },
+    { l:'Stress DSCR',      v: x2(uw.stress_dscr),   c: colorStr,  s:'at 8% stress rate' },
+    { l:'Loan Amount',      v: usd(p.loan_amount),    c:'c-blue',   s:`${p.num_units || 0} units` },
+    { l:'Occupancy',        v: pct(p.occupancy_rate), c: colorOcc,  s: p.property_type || '' },
+    { l:'NOI',              v: usd(p.noi),            c:'c-blue',   s:'net operating income' },
+    { l:'Ann. Debt Service',v: usd(uw.annual_debt_service), c:'c-blue', s:`${p.interest_rate || 0}% rate` },
+  ].map(({ l,v,c,s }) => `
+    <div class="mc">
+      <div class="mc-label">${l}</div>
+      <div class="mc-value ${c}">${v}</div>
+      <div class="mc-sub">${s}</div>
+    </div>`).join('');
+
+  $('deal-params').innerHTML = [
+    ['Property Type', p.property_type],
+    ['Address',       p.address],
+    ['Borrower',      p.borrower],
+    ['Loan Amount',   usd(p.loan_amount)],
+    ['Appraised Value', usd(p.appraised_value)],
+    ['NOI',           usd(p.noi)],
+    ['Units',         p.num_units],
+    ['Occupancy',     pct(p.occupancy_rate)],
+    ['Loan Term',     `${p.loan_term_years} yrs`],
+    ['Interest Rate', `${p.interest_rate}%`],
+    ['Amortization',  `${p.amortization_years} yrs`],
+  ].map(([k,v]) => `<div class="drow"><span class="drow-k">${k}</span><span class="drow-v">${v ?? '–'}</span></div>`).join('');
+
+  mkChart('radarChart', {
+    type: 'radar',
+    data: {
+      labels: ['DSCR', 'LTV', 'Debt\nYield', 'Occupancy', 'Stress\nDSCR'],
+      datasets: [{
+        label: 'Deal Profile',
+        data: [
+          norm(uw.dscr              || 0,  1.0,  2.0),
+          norm(1 - (uw.ltv         || 0),  0.15, 0.50),
+          norm(uw.debt_yield        || 0,  0.055,0.14),
+          norm(p.occupancy_rate     || 0,  0.75, 1.0),
+          norm(uw.stress_dscr       || 0,  0.9,  1.5),
+        ],
+        backgroundColor: 'rgba(21,101,192,.13)',
+        borderColor: '#1565c0',
+        pointBackgroundColor: '#1565c0',
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      scales: { r: { min:0, max:10, ticks:{ display:false }, grid:{ color:'#e5e7eb' },
+                     pointLabels:{ font:{ size:11 } } } },
+      plugins: { legend:{ display:false } },
+    },
+  });
+}
+
+/* ─── underwriting ────────────────────────────────────── */
+function renderUnderwriting(d) {
+  const uw = d.underwriting || {};
+
+  const bars = [
+    { n:'DSCR',        v:uw.dscr,          fmt:x2,  thresh:1.25, max:2.2,  invert:false, lo:1.10, hi:1.25 },
+    { n:'Stress DSCR', v:uw.stress_dscr,   fmt:x2,  thresh:1.10, max:2.0,  invert:false, lo:1.00, hi:1.10 },
+    { n:'LTV',         v:uw.ltv,           fmt:pct, thresh:0.75, max:1.0,  invert:true,  lo:0.75, hi:0.65 },
+    { n:'Debt Yield',  v:uw.debt_yield,    fmt:pct, thresh:0.10, max:0.18, invert:false, lo:0.075,hi:0.10  },
+  ];
+  $('uw-bars').innerHTML = bars.map(({ n,v,fmt,thresh,max,invert,lo,hi }) => {
+    const fill   = clamp((v / max) * 100, 0, 100);
+    const tick   = (thresh / max) * 100;
+    const ok     = invert ? (v <= hi) : (v >= hi);
+    const warn   = invert ? (v <= lo && v > hi) : (v >= lo && v < hi);
+    const cls    = ok ? 'fill-green' : warn ? 'fill-amber' : 'fill-red';
+    const vcls   = ok ? 'c-green'   : warn ? 'c-amber'   : 'c-red';
+    return `
+      <div class="tbar">
+        <div class="tbar-hdr">
+          <span class="tbar-name">${n}</span>
+          <span class="tbar-val ${vcls}">${fmt(v)}</span>
+        </div>
+        <div class="track">
+          <div class="fill ${cls}" style="width:${fill}%"></div>
+          <div class="tick" style="left:${tick}%"></div>
+        </div>
+        <div class="tbar-axis">
+          <span>0</span><span>threshold ${fmt(thresh)}</span><span>${fmt(max)}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  mkChart('uwChart', {
+    type: 'bar',
+    data: {
+      labels: ['DSCR', 'LTV (%)', 'Debt Yield (%)', 'Stress DSCR'],
+      datasets: [
+        {
+          label: 'Actual',
+          data: [uw.dscr, (uw.ltv||0)*100, (uw.debt_yield||0)*100, uw.stress_dscr],
+          backgroundColor: '#1565c0', borderRadius: 4,
+        },
+        {
+          label: 'Threshold',
+          data: [1.25, 75, 10, 1.10],
+          backgroundColor: 'rgba(107,114,128,.28)', borderRadius: 4,
+        },
+      ],
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      plugins: { legend:{ position:'bottom', labels:{ font:{ size:11 } } } },
+      scales: {
+        y: { beginAtZero:true, grid:{ color:'#f3f4f6' }, ticks:{ font:{ size:11 } } },
+        x: { grid:{ display:false },               ticks:{ font:{ size:11 } } },
+      },
+    },
+  });
+
+  $('uw-notes').innerHTML = [
+    ['DSCR',           uw.dscr_assessment],
+    ['LTV',            uw.ltv_assessment],
+    ['Debt Yield',     uw.debt_yield_assessment],
+    ['Stress Test',    uw.stress_assessment],
+    ['Recommendation', uw.recommendation],
+  ].filter(([,v])=>v).map(([k,v]) => `
+    <div class="prose-block">
+      <div class="prose-label">${k}</div>
+      <p class="prose">${v}</p>
+    </div>`).join('');
+
+  $('uw-conds').innerHTML = (uw.conditions || []).map(c => `<li>${c}</li>`).join('');
+}
+
+/* ─── market ──────────────────────────────────────────── */
+function renderMarket(d) {
+  const mk = d.market || {};
+
+  const TREND_TAG   = { improving:'tag-green', stable:'tag-blue', declining:'tag-red' };
+  const SUPPLY_TAG  = { low:'tag-green', moderate:'tag-amber', high:'tag-red' };
+
+  $('market-stats').innerHTML = [
+    { l:'Submarket',      v: mk.submarket             || '–', t:'tag-gray'  },
+    { l:'Trend',          v: mk.market_trend          || '–', t: TREND_TAG[mk.market_trend]  || 'tag-gray' },
+    { l:'Avg Cap Rate',   v: (mk.avg_cap_rate || 0).toFixed(1)+'%',     t:'tag-gray' },
+    { l:'Vacancy Rate',   v: pct(mk.vacancy_rate),                       t: (mk.vacancy_rate||0)<=.06?'tag-green':'tag-amber' },
+    { l:'Avg Asking Rent',v: `$${(mk.avg_asking_rent_per_unit||0).toLocaleString()}/unit`, t:'tag-gray' },
+    { l:'Rent Growth YoY',v: pct(mk.rent_growth_yoy),                    t: (mk.rent_growth_yoy||0)>0?'tag-green':'tag-red' },
+    { l:'Supply Pressure',v: mk.supply_pressure       || '–', t: SUPPLY_TAG[mk.supply_pressure] || 'tag-gray' },
+  ].map(({ l,v,t }) => `
+    <div class="mc">
+      <div class="mc-label">${l}</div>
+      <div style="margin-top:8px"><span class="tag ${t}" style="font-size:.9rem">${v}</span></div>
+    </div>`).join('');
+
+  $('mkt-commentary').textContent = mk.market_commentary || '';
+  const li = arr => (arr||[]).map(s=>`<li>${s}</li>`).join('');
+  $('mkt-drivers').innerHTML  = li(mk.demand_drivers);
+  $('mkt-risks').innerHTML    = li(mk.risk_factors);
+  $('mkt-sources').innerHTML  = (mk.sources||[]).map(s=>`<span class="tag tag-gray">${s}</span>`).join('');
+
+  mkChart('marketChart', {
+    type: 'bar',
+    data: {
+      labels: ['Cap Rate (%)', 'Vacancy (%)', 'Rent Growth (%)'],
+      datasets: [{
+        label: 'Market Data',
+        data: [
+          mk.avg_cap_rate || 0,
+          (mk.vacancy_rate || 0) * 100,
+          (mk.rent_growth_yoy || 0) * 100,
+        ],
+        backgroundColor: ['#1565c0', '#ef6c00', '#2e7d32'],
+        borderRadius: 5,
+      }],
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      plugins: { legend:{ display:false } },
+      scales: {
+        y: { beginAtZero:true, grid:{ color:'#f3f4f6' }, ticks:{ font:{ size:11 } } },
+        x: { grid:{ display:false },              ticks:{ font:{ size:11 } } },
+      },
+    },
+  });
+}
+
+/* ─── credit & program ────────────────────────────────── */
+function renderCreditProgram(d) {
+  const cr = d.credit        || {};
+  const pm = d.program_match || {};
+  const li  = arr => (arr||[]).map(s=>`<li>${s}</li>`).join('');
+
+  $('credit-body').innerHTML = `
+    <div class="tags" style="margin-bottom:14px">
+      <span class="tag ${FLAG_TAG[cr.track_record_flag] || 'tag-gray'}">Track record: ${cr.track_record_flag || '–'}</span>
+      <span class="tag ${CR_TAG[cr.credit_recommendation] || 'tag-gray'}">${cr.credit_recommendation || '–'}</span>
+    </div>
+    ${[
+      ['Sponsor Experience', cr.sponsor_experience_assessment],
+      ['Global Cash Flow',   cr.global_cash_flow_assessment],
+      ['Entity Structure',   cr.entity_structure_note],
+      ['Commentary',         cr.credit_commentary],
+    ].filter(([,v])=>v).map(([k,v])=>`
+      <div class="prose-block"><div class="prose-label">${k}</div><p class="prose">${v}</p></div>
+    `).join('')}`;
+
+  $('program-body').innerHTML = `
+    <div class="tags" style="margin-bottom:14px">
+      <span class="tag tag-blue" style="font-size:.95rem;padding:6px 16px;font-weight:700">${pm.recommended_program || '–'}</span>
+      ${(pm.alternative_programs||[]).map(p=>`<span class="tag tag-gray">${p}</span>`).join('')}
+    </div>
+    <div class="tags" style="margin-bottom:14px">
+      <span class="tag ${pm.agency_eligible ? 'tag-green':'tag-gray'}">Agency ${pm.agency_eligible?'✓':'✗'}</span>
+      <span class="tag ${pm.cmbs_eligible   ? 'tag-green':'tag-gray'}">CMBS ${pm.cmbs_eligible?'✓':'✗'}</span>
+      <span class="tag ${pm.bridge_required ? 'tag-amber':'tag-gray'}">Bridge ${pm.bridge_required?'required':'not required'}</span>
+    </div>
+    ${[
+      ['Rationale',       pm.program_rationale],
+      ['Execution Notes', pm.execution_notes],
+      ['Commentary',      pm.program_commentary],
+    ].filter(([,v])=>v).map(([k,v])=>`
+      <div class="prose-block"><div class="prose-label">${k}</div><p class="prose">${v}</p></div>
+    `).join('')}
+    ${pm.key_requirements?.length ? `
+      <div class="prose-label" style="margin-bottom:8px">Key Requirements</div>
+      <ul class="arrow-list">${li(pm.key_requirements)}</ul>` : ''}`;
+
+  $('cr-risks').innerHTML    = li(cr.key_risks);
+  $('cr-mitigants').innerHTML = li(cr.mitigants);
+}
+
+/* ─── memo ────────────────────────────────────────────── */
+function renderMemo(d) {
+  $('memo-body').innerHTML = marked.parse(d.memo || '_No memo available._');
+}
+
+/* ─── batch ───────────────────────────────────────────── */
+function renderBatch(batch) {
+  const entries = Object.entries(batch);
+  if (!entries.length) return;
+  $('btn-batch').style.display = '';
+  $('btn-batch').textContent   = `Batch (${entries.length})`;
+
+  const names = [], dscr = [], ltvS = [], dyS = [];
+
+  $('batch-rows').innerHTML = entries.map(([name, state]) => {
+    const uw = state.underwriting  || {};
+    const pm = state.program_match || {};
+    const cr = state.credit        || {};
+    const fl = uw.flag || '–';
+    const rc = cr.credit_recommendation || '–';
+    names.push(name);
+    dscr.push(norm(uw.dscr          || 0, 0.8, 2.0));
+    ltvS.push(norm(1-(uw.ltv        || 0), 0.15, 0.50));
+    dyS.push (norm(uw.debt_yield    || 0, 0.05, 0.15));
+    return `<tr>
+      <td><strong>${name}</strong></td>
+      <td>${x2(uw.dscr)}</td>
+      <td>${pct(uw.ltv)}</td>
+      <td>${pct(uw.debt_yield)}</td>
+      <td><span class="tag ${FLAG_TAG[fl]||'tag-gray'}">${fl}</span></td>
+      <td>${pm.recommended_program || '–'}</td>
+      <td><span class="tag ${CR_TAG[rc]||'tag-gray'}">${rc}</span></td>
+    </tr>`;
+  }).join('');
+
+  mkChart('batchChart', {
+    type: 'bar',
+    data: {
+      labels: names,
+      datasets: [
+        { label: 'DSCR score',       data: dscr, backgroundColor:'#1565c0', borderRadius:4 },
+        { label: 'LTV score',        data: ltvS, backgroundColor:'#ef6c00', borderRadius:4 },
+        { label: 'Debt Yield score', data: dyS,  backgroundColor:'#2e7d32', borderRadius:4 },
+      ],
+    },
+    options: {
+      ...CHART_DEFAULTS,
+      plugins: { legend:{ position:'bottom', labels:{ font:{ size:11 } } } },
+      scales: {
+        y: { min:0, max:10, grid:{ color:'#f3f4f6' }, ticks:{ font:{ size:11 } } },
+        x: { grid:{ display:false },                  ticks:{ font:{ size:11 } } },
+      },
+    },
+  });
+}
+
+/* ─── init ────────────────────────────────────────────── */
+async function init() {
+  try {
+    const res = await fetch('outputs/deal_result.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const d = await res.json();
+
+    renderHeader(d);
+    renderOverview(d);
+    renderUnderwriting(d);
+    renderMarket(d);
+    renderCreditProgram(d);
+    renderMemo(d);
+  } catch (err) {
+    $('overview').innerHTML = `
+      <div class="err">
+        <strong>No deal data found.</strong><br><br>
+        Run the pipeline first:<br>
+        <code>python main.py --deal data/sample_deal</code><br><br>
+        Then serve from the project root:<br>
+        <code>python -m http.server 8000</code><br><br>
+        Open <strong>http://localhost:8000/dashboard.html</strong>
+      </div>`;
+    return;
+  }
+
+  try {
+    const res2 = await fetch('outputs/batch_results.json');
+    if (res2.ok) renderBatch(await res2.json());
+  } catch (_) {}
+}
+
+init();
+</script>
+</body>
+</html>

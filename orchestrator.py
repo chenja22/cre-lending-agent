@@ -1,10 +1,10 @@
-import json
 from agents.intake import IntakeAgent
 from agents.underwriting import UnderwritingAgent
 from agents.market import MarketAgent
 from agents.credit import CreditAgent
 from agents.program_matcher import ProgramMatcherAgent
 from agents.memo import MemoAgent
+from ui import console, stage_header, stage_done
 
 class Orchestrator:
     def __init__(self):
@@ -16,32 +16,37 @@ class Orchestrator:
         self.memo = MemoAgent()
 
     def run(self, deal_path: str) -> dict:
-        print("\n=== CRE LENDING AGENT STARTING ===")
+        console.rule("[bold]CRE Lending Stack[/bold]", style="blue")
 
         deal_state = {}
 
-        # Stage 1: Intake
+        stage_header(1, "Intake")
         deal_state["deal_params"] = self.intake.run(deal_path)
-        print(f"Deal params extracted: {json.dumps(deal_state['deal_params'], indent=2)}")
+        p = deal_state["deal_params"]
+        stage_done(f"{p.get('address', 'unknown')}  ·  {p.get('property_type', '')}  ·  ${p.get('loan_amount', 0):,.0f} loan")
 
-        # Stage 2: Underwriting
+        stage_header(2, "Underwriting")
         deal_state["underwriting"] = self.underwriting.run(deal_state["deal_params"])
-        print(f"Underwriting complete: {json.dumps(deal_state['underwriting'], indent=2)}")
+        uw = deal_state["underwriting"]
+        stage_done(f"DSCR {uw.get('dscr', 0):.2f}x  ·  LTV {uw.get('ltv', 0):.1%}  ·  Debt Yield {uw.get('debt_yield', 0):.1%}  ·  [{uw.get('flag', '')}]")
 
-        # Stage 3: Market
+        stage_header(3, "Market Research")
         deal_state["market"] = self.market.run(deal_state["deal_params"])
-        print(f"Market analysis complete: {json.dumps(deal_state['market'], indent=2)}")
+        mk = deal_state["market"]
+        stage_done(f"{mk.get('submarket', 'unknown')}  ·  {mk.get('market_trend', '')}  ·  avg cap rate {mk.get('avg_cap_rate', 0):.2%}")
 
-        # Stage 4: Credit
+        stage_header(4, "Credit")
         deal_state["credit"] = self.credit.run(deal_state["deal_params"])
-        print(f"Credit analysis complete: {json.dumps(deal_state['credit'], indent=2)}")
+        cr = deal_state["credit"]
+        stage_done(f"Sponsor: {cr.get('track_record_flag', 'unknown')}  ·  Rec: {cr.get('credit_recommendation', 'N/A')}")
 
-        # Stage 5: Program matching
+        stage_header(5, "Program Matching")
         deal_state["program_match"] = self.program_matcher.run(deal_state)
-        print(f"Program match complete: {json.dumps(deal_state['program_match'], indent=2)}")
+        pm = deal_state["program_match"]
+        stage_done(f"{pm.get('recommended_program', 'N/A')}  ·  agency eligible: {pm.get('agency_eligible')}  ·  bridge required: {pm.get('bridge_required')}")
 
-        # Stage 6: Memo assembly
+        stage_header(6, "Credit Memo")
         deal_state["memo"] = self.memo.run(deal_state)
-        print("\n=== CREDIT MEMO GENERATED ===")
+        stage_done("memo generated")
 
         return deal_state
