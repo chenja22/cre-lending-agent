@@ -239,4 +239,4 @@ Each full deal run costs approximately $0.10–0.20 using claude-haiku-4-5 (stru
 
 Built as a portfolio project to demonstrate multi-agent AI system design applied to institutional CRE lending workflows. The underwriting logic, credit standards, and program eligibility criteria reflect real CMBS, agency, and balance-sheet lending practices.
 
-Domain context informed by industry resources including Green Street, The Real Deal, and CoStar.
+Domain context informed by industry resources including Green Street, The Real Deal, and CoStar. 
